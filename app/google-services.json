@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "835665069288",
+    "firebase_url": "https://messengergpp.firebaseio.com",
+    "project_id": "messengergpp",
+    "storage_bucket": "messengergpp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:835665069288:android:ad534d7a946d5b5f",
+        "android_client_info": {
+          "package_name": "com.gpp.messenger"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "835665069288-3asij15m3h3sgkgfs3fhln7mg4no05s1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gpp.messenger",
+            "certificate_hash": "670329ca8258f341371a0587ed2f46e28ab3feef"
+          }
+        },
+        {
+          "client_id": "835665069288-dkskt06nkilmuer0te303ovv95gv9uea.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMdFE0YfK17_D5jEpTgN8ojSbgznXLNyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "835665069288-dkskt06nkilmuer0te303ovv95gv9uea.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
