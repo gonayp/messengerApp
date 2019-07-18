@@ -69,7 +69,7 @@ public class MessageActivity extends AppCompatActivity {
 
     //NOTIFICACIONEs
     final private String FCM_API = "https://fcm.googleapis.com/fcm/send";
-    final private String serverKey = "key=" + "AAAA3PQUVDk:APA91bHS6nArwSQ4hSxG8UcQeuUkAIdCOnCEXyouQpZICLiV5_yaRWESkgPJZzQSIF8HY8nIwfRFkRUMefepMQ-KD6yGTK0lJfpWdmlF5XG1dhCCCPuFGCKjhb99XEQVHR7AeUGJQOqy";
+    final private String serverKey = "key=" + BuildConfig.ApiKey;
     final private String contentType = "application/json";
     final String TAG = "NOTIFICATION TAG";
 
