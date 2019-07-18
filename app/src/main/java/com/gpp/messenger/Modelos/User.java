@@ -7,13 +7,15 @@ public class User {
     private String imageURL;
     private String status;
     private String searchName;
+    private String token;
 
-    public User(String id, String username, String imageURL, String status, String searchName) {
+    public User(String id, String username, String imageURL, String status, String searchName,String token) {
         this.id = id;
         this.username = username;
         this.imageURL = imageURL;
         this.status = status;
         this.searchName = searchName;
+        this.token = token;
     }
 
     public User() {
@@ -57,5 +59,13 @@ public class User {
 
     public void setSearchName(String searchName) {
         this.searchName = searchName;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

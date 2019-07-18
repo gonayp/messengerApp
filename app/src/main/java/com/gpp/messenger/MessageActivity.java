@@ -1,5 +1,7 @@
 package com.gpp.messenger;
 
+
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -8,11 +10,17 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,10 +32,15 @@ import com.google.firebase.database.ValueEventListener;
 import com.gpp.messenger.Adapter.MessageAdapter;
 import com.gpp.messenger.Modelos.Chat;
 import com.gpp.messenger.Modelos.User;
+import com.gpp.messenger.Notificaciones.MySingleton;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.ToLongBiFunction;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -51,6 +64,16 @@ public class MessageActivity extends AppCompatActivity {
     RecyclerView recyclerView;
 
     Intent intent;
+
+    User uReceiber;
+
+    //NOTIFICACIONEs
+    final private String FCM_API = "https://fcm.googleapis.com/fcm/send";
+    final private String serverKey = "key=" + "AAAA3PQUVDk:APA91bHS6nArwSQ4hSxG8UcQeuUkAIdCOnCEXyouQpZICLiV5_yaRWESkgPJZzQSIF8HY8nIwfRFkRUMefepMQ-KD6yGTK0lJfpWdmlF5XG1dhCCCPuFGCKjhb99XEQVHR7AeUGJQOqy";
+    final private String contentType = "application/json";
+    final String TAG = "NOTIFICATION TAG";
+
+    String TOPIC;
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -82,6 +105,20 @@ public class MessageActivity extends AppCompatActivity {
 
         intent = getIntent();
         userid = intent.getStringExtra("userid");
+
+        reference = FirebaseDatabase.getInstance().getReference("Users").child(userid);
+
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                uReceiber = dataSnapshot.getValue(User.class);//Para saber quien es el usuario recepcion del chat
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
 
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -119,6 +156,33 @@ public class MessageActivity extends AppCompatActivity {
         });
     }
 
+    private void readMessages (final String myid, final String userId, final String imageurl){
+        mchat = new ArrayList<>();
+
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Chats");
+        reference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                mchat.clear();
+                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
+                    Chat chat = snapshot.getValue(Chat.class);
+                    if(chat.getReceiver().equals(myid) && chat.getSender().equals(userId) ||
+                            chat.getReceiver().equals(userId) && chat.getSender().equals(myid)){
+                        mchat.add(chat);
+
+                    }
+
+                    messageAdapter = new MessageAdapter( MessageActivity.this, mchat,imageurl);
+                    recyclerView.setAdapter(messageAdapter );
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+    }
 
     private void sendMessage (String sender, String receiver, String message){
 
@@ -130,6 +194,7 @@ public class MessageActivity extends AppCompatActivity {
         hashMap.put("message",message);
 
         reference.child("Chats").push().setValue(hashMap);
+        mandarNotificacion(message);
 
         final DatabaseReference chatRef = FirebaseDatabase.getInstance().getReference("Chatlist")
                 .child(fuser.getUid())
@@ -153,32 +218,58 @@ public class MessageActivity extends AppCompatActivity {
 
 
 
-    private void readMessages (final String myid, final String userId, final String imageurl){
-        mchat = new ArrayList<>();
 
-        DatabaseReference reference = FirebaseDatabase.getInstance().getReference("Chats");
-        reference.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                mchat.clear();
-                for(DataSnapshot snapshot : dataSnapshot.getChildren()){
-                    Chat chat = snapshot.getValue(Chat.class);
-                    if(chat.getReceiver().equals(myid) && chat.getSender().equals(userId) ||
-                            chat.getReceiver().equals(userId) && chat.getSender().equals(myid)){
-                        mchat.add(chat);
-                    }
 
-                    messageAdapter = new MessageAdapter( MessageActivity.this, mchat,imageurl);
-                    recyclerView.setAdapter(messageAdapter );
-                }
-            }
+    private void mandarNotificacion(String message) {
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+        TOPIC = "/topics/userABC"; //topic must match with what the receiver subscribed to
+        String NOTIFICATION_TITLE = "Nuevo Mensaje";
+        String NOTIFICATION_MESSAGE = message;
 
-            }
-        });
+        JSONObject notification = new JSONObject();
+        JSONObject notifcationBody = new JSONObject();
+        try {
+            notifcationBody.put("title", NOTIFICATION_TITLE);
+            notifcationBody.put("message", NOTIFICATION_MESSAGE);
+            //notifcationBody.put("token",uReceiber.getToken());
+
+            notification.put("to", TOPIC);
+            notification.put("data", notifcationBody);
+        } catch (JSONException e) {
+            Log.e(TAG, "onCreate: " + e.getMessage() );
+        }
+        sendNotification(notification);
+
     }
+
+
+    private void sendNotification(JSONObject notification) {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(FCM_API, notification,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.i(TAG, "onResponse: " + response.toString());
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Toast.makeText(MessageActivity.this, "Request error", Toast.LENGTH_LONG).show();
+                        Log.i(TAG, "onErrorResponse: Didn't work");
+                        Log.i("******", error.toString());
+                    }
+                }){
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                Map<String, String> params = new HashMap<>();
+                params.put("Authorization", serverKey);
+                params.put("Content-Type", contentType);
+                return params;
+            }
+        };
+        MySingleton.getInstance(getApplicationContext()).addToRequestQueue(jsonObjectRequest);
+    }
+
 
     private void status (String status){
         reference = FirebaseDatabase.getInstance().getReference("Users").child(fuser.getUid());
